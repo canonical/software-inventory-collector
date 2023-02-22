@@ -63,14 +63,12 @@ def main() -> None:
 
     try:
         config = parse_config(args.config)
-    except ConfigError as exc:
-        print(f"Failed to load config: {exc}")
-        sys.exit(1)
-
-    try:
         controller: Controller = jasyncio.run(get_controller(config))
     except JujuError as exc:
         print(f"Failed to connect to juju controller: {exc}")
+        sys.exit(1)
+    except ConfigError as exc:
+        print(f"Failed to load config: {exc}")
         sys.exit(1)
 
     if args.dry_run:
