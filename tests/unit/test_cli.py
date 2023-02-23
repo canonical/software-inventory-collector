@@ -78,8 +78,8 @@ def test_cli_main_success(dry_run, mocker):
     get_controller_mock = mocker.patch.object(
         cli, "get_controller", return_value=controller
     )
-    get_exporter_data_mock = mocker.patch.object(cli, "get_exporter_data")
-    get_juju_data_mock = mocker.patch.object(cli, "get_juju_data")
+    get_exporter_data_mock = mocker.patch.object(cli, "fetch_exporter_data")
+    get_juju_data_mock = mocker.patch.object(cli, "fetch_juju_data")
 
     with pytest.raises(SystemExit) as exc:
         cli.main()
@@ -110,8 +110,8 @@ def test_cli_main_config_error(mocker):
         cli, "parse_config", side_effect=cli.ConfigError
     )
     get_controller_mock = mocker.patch.object(cli, "get_controller")
-    get_exporter_data_mock = mocker.patch.object(cli, "get_exporter_data")
-    get_juju_data_mock = mocker.patch.object(cli, "get_juju_data")
+    get_exporter_data_mock = mocker.patch.object(cli, "fetch_exporter_data")
+    get_juju_data_mock = mocker.patch.object(cli, "fetch_juju_data")
 
     with pytest.raises(SystemExit) as exc:
         cli.main()
@@ -135,8 +135,8 @@ def test_cli_main_juju_error(mocker):
     get_controller_mock = mocker.patch.object(
         cli, "get_controller", side_effect=cli.JujuError
     )
-    get_exporter_data_mock = mocker.patch.object(cli, "get_exporter_data")
-    get_juju_data_mock = mocker.patch.object(cli, "get_juju_data")
+    get_exporter_data_mock = mocker.patch.object(cli, "fetch_exporter_data")
+    get_juju_data_mock = mocker.patch.object(cli, "fetch_juju_data")
 
     with pytest.raises(SystemExit) as exc:
         cli.main()
@@ -167,9 +167,9 @@ def test_cli_main_collection_error(mocker):
         cli, "get_controller", return_value=controller
     )
     get_exporter_data_mock = mocker.patch.object(
-        cli, "get_exporter_data", side_effect=Exception
+        cli, "fetch_exporter_data", side_effect=Exception
     )
-    get_juju_data_mock = mocker.patch.object(cli, "get_juju_data")
+    get_juju_data_mock = mocker.patch.object(cli, "fetch_juju_data")
 
     with pytest.raises(SystemExit) as exc:
         cli.main()

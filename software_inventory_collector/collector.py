@@ -33,7 +33,7 @@ def _add_file_to_tar(file_name: str, content: str, tar_path: str) -> None:
             tar_file.add(temp_file.name, arcname=file_name)
 
 
-def get_exporter_data(config: Config) -> None:
+def fetch_exporter_data(config: Config) -> None:
     """Query exporter endpoints and collect data."""
     for target in config.targets:
         url = f"http://{target.endpoint}/"
@@ -64,7 +64,7 @@ async def get_controller(config: Config) -> Controller:
     return controller
 
 
-async def get_juju_data(config: Config, controller: Controller) -> None:
+async def fetch_juju_data(config: Config, controller: Controller) -> None:
     """Query Juju controller and collect information about models."""
     model_uuids = await controller.model_uuids()
 

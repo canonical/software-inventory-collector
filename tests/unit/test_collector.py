@@ -33,7 +33,7 @@ def test_add_file_to_tar(mocker):
     opened_tar.add.assert_called_once_with(temp_file.name, arcname=file_name)
 
 
-def test_get_exporter_data_success(collector_config, mocker):
+def test_fetch_exporter_data_success(collector_config, mocker):
     """Test function gathering data from exporter endpoints."""
     expected_requests = []
     expected_responses = []
@@ -58,13 +58,13 @@ def test_get_exporter_data_success(collector_config, mocker):
     )
     add_tar_mock = mocker.patch.object(collector, "_add_file_to_tar")
 
-    collector.get_exporter_data(collector_config)
+    collector.fetch_exporter_data(collector_config)
 
     get_mock.assert_has_calls(expected_requests)
     add_tar_mock.assert_has_calls(expected_tar_calls)
 
 
-def test_get_exporter_data_error(collector_config, mocker):
+def test_fetch_exporter_data_error(collector_config, mocker):
     """Test handling of error during collection of data from exporter endpoint."""
     exception = collector.requests.RequestException
 
@@ -72,7 +72,7 @@ def test_get_exporter_data_error(collector_config, mocker):
     add_tar_mock = mocker.patch.object(collector, "_add_file_to_tar")
 
     with pytest.raises(collector.CollectionError):
-        collector.get_exporter_data(collector_config)
+        collector.fetch_exporter_data(collector_config)
 
     add_tar_mock.assert_not_called()
 
@@ -98,7 +98,7 @@ async def test_get_controller(collector_config, mocker):
 
 
 @pytest.mark.asyncio
-async def test_get_juju_data(collector_config, mocker):
+async def test_fetch_juju_data(collector_config, mocker):
     """Test collection data from juju controller.
 
     Note (mkalcok): This is absolutely monstrous unit tests that shouldn't exist but
@@ -112,7 +112,7 @@ async def test_get_juju_data(collector_config, mocker):
           applications to export.
         - Setup model with Cross Model Relation to make sure that we ignore CMR data in
           bundle export.
-      * Once all is prepared, run `get_juju_data` function.
+      * Once all is prepared, run `fetch_juju_data` function.
       * Verify that expected calls were made.
     """
     ts = collector.TIMESTAMP
@@ -217,7 +217,7 @@ async def test_get_juju_data(collector_config, mocker):
     controller.get_model.side_effect = AsyncMock(side_effect=models)
 
     # collect data from juju
-    await collector.get_juju_data(collector_config, controller)
+    await collector.fetch_juju_data(collector_config, controller)
 
     # check expected calls
     add_file_to_tar_mock.assert_has_calls(tar_calls)
@@ -227,8 +227,8 @@ async def test_get_juju_data(collector_config, mocker):
 
 
 @pytest.mark.asyncio
-async def test_get_juju_data_error(collector_config, mocker):
-    """Test that `get_juju_data` re-raises exceptions not related to empty model.
+async def test_fetch_juju_data_error(collector_config, mocker):
+    """Test that `fetch_juju_data` re-raises exceptions not related to empty model.
 
     This function is meant to handle only JujuAPIErrors during bundle export of an empty
     model, other errors should be re-raised.
@@ -251,6 +251,6 @@ async def test_get_juju_data_error(collector_config, mocker):
     )
 
     with pytest.raises(collector.JujuAPIError) as exc:
-        await collector.get_juju_data(collector_config, controller)
+        await collector.fetch_juju_data(collector_config, controller)
 
     assert str(exc.value) == juju_error["error"]

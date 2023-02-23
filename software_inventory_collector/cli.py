@@ -10,8 +10,8 @@ from juju.errors import JujuError
 
 from software_inventory_collector.collector import (
     get_controller,
-    get_exporter_data,
-    get_juju_data,
+    fetch_exporter_data,
+    fetch_juju_data,
 )
 from software_inventory_collector.config import Config
 from software_inventory_collector.exception import ConfigError, ConfigMissingKeyError
@@ -77,8 +77,8 @@ def main() -> None:
         sys.exit(0)
 
     try:
-        get_exporter_data(config)
-        jasyncio.run(get_juju_data(config, controller))
+        fetch_exporter_data(config)
+        jasyncio.run(fetch_juju_data(config, controller))
         exit_code = 0
     except Exception as exc:  # pylint: disable=W0718
         print(f"Failed to collect data: {exc}")
