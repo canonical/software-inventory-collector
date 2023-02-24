@@ -9,9 +9,9 @@ from juju.controller import Controller
 from juju.errors import JujuError
 
 from software_inventory_collector.collector import (
-    get_controller,
     fetch_exporter_data,
     fetch_juju_data,
+    get_controller,
 )
 from software_inventory_collector.config import Config
 from software_inventory_collector.exception import ConfigError, ConfigMissingKeyError

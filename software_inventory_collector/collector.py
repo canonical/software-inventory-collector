@@ -9,6 +9,7 @@ import requests
 import yaml
 from juju.controller import Controller
 from juju.errors import JujuAPIError
+from juju.model import Model
 
 from software_inventory_collector.config import Config
 from software_inventory_collector.exception import CollectionError
@@ -64,42 +65,62 @@ async def get_controller(config: Config) -> Controller:
     return controller
 
 
+async def _save_bundle_data(model: Model, file_name: str, dest_tarball: str) -> None:
+    """Save exported bundle into the file inside 'dest_tarball'.
+
+    Exported bundle is stripped from the Cross Model Relation data.
+
+    :param model: Connected Juju model object
+    :param file_name: Filename of the exported bundle within tarball
+    :param dest_tarball: Output tarball in which the bundle file will be stored.
+    :return: None
+    """
+    try:
+        bundle = await model.export_bundle()
+    except JujuAPIError as exc:
+        if str(exc) == "nothing to export as there are no applications":
+            bundle = "{}"
+        else:
+            raise exc
+
+    bundle_yaml = yaml.load_all(bundle, Loader=yaml.FullLoader)
+    for data in bundle_yaml:
+        bundle_json = json.dumps(data)
+        # skip SAAS; multiple documents, we need to import only the bundle
+        if "offers" in bundle_json:
+            continue
+
+        _add_file_to_tar(file_name, bundle_json, dest_tarball)
+
+
+async def _save_status_data(model: Model, file_name: str, dest_tarball: str) -> None:
+    """
+
+    :param model: Connected Juju model object
+    :param file_name: Filename of the exported bundle within tarball
+    :param dest_tarball: Output tarball in which the bundle file will be stored.
+    :return: None
+    """
+    status = await model.get_status()
+    _add_file_to_tar(file_name, status.to_json(), dest_tarball)
+
+
 async def fetch_juju_data(config: Config, controller: Controller) -> None:
     """Query Juju controller and collect information about models."""
     model_uuids = await controller.model_uuids()
+    customer = config.settings.customer
+    site = config.settings.site
+    output_path = config.settings.collection_path
+    tar_name = f"{customer}_@_{site}_@_{{model}}_@_{TIMESTAMP}.tar"
 
     for model_name in model_uuids.keys():
         model = await controller.get_model(model_name)
-        status = await model.get_status()
-        try:
-            bundle = await model.export_bundle()
-        except JujuAPIError as exc:
-            if str(exc) == "nothing to export as there are no applications":
-                bundle = "{}"
-            else:
-                raise exc
-        await model.disconnect()
-
-        status_file = f"juju_status_@_{model_name}_@_{TIMESTAMP}"
         bundle_file = f"juju_bundle_@_{model_name}_@_{TIMESTAMP}"
-        tar = (
-            f"{config.settings.customer}_@_{config.settings.site}_@_{model_name}_"
-            f"@_{TIMESTAMP}.tar"
-        )
-        tar_path = os.path.join(
-            config.settings.collection_path,
-            tar,
-        )
+        status_file = f"juju_status_@_{model_name}_@_{TIMESTAMP}"
+        tar_path = os.path.join(output_path, tar_name.format(model=model_name))
 
-        _add_file_to_tar(status_file, status.to_json(), tar_path)
-
-        bundle_yaml = yaml.load_all(bundle, Loader=yaml.FullLoader)
-        for data in bundle_yaml:
-            bundle_json = json.dumps(data)
-            # skip SAAS; multiple documents, we need to import only the bundle
-            if "offers" in bundle_json:
-                continue
-
-            _add_file_to_tar(bundle_file, bundle_json, tar_path)
+        await _save_status_data(model, status_file, tar_path)
+        await _save_bundle_data(model, bundle_file, tar_path)
+        await model.disconnect()
 
     await controller.disconnect()

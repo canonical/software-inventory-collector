@@ -1,4 +1,5 @@
 """Tests for software_inventory_collector.collector module"""
+import os.path
 from collections import defaultdict
 from tempfile import NamedTemporaryFile
 from unittest.mock import AsyncMock, MagicMock, call, patch
@@ -97,133 +98,136 @@ async def test_get_controller(collector_config, mocker):
     )
 
 
+@pytest.mark.parametrize(
+    "exported_bundle",
+    [
+        "bundle: bundle_data",  # Regular bundle
+        "bundle: bundle_data\n---\noffers: cmr_data",  # Bundle with CMR
+    ],
+)
 @pytest.mark.asyncio
-async def test_fetch_juju_data(collector_config, mocker):
-    """Test collection data from juju controller.
+async def test_save_bundle_data(exported_bundle, mocker):
+    """Test function that saves exported juju bundles.
 
-    Note (mkalcok): This is absolutely monstrous unit tests that shouldn't exist but
-    there's just too much that needs to be mocked and prepared in terms of data and
-    structures that it ended up as a huge UT. I'll try to go briefly over its steps:
-      * Prepare some commonly used variables
-      * Patch Controller object and function that creates tarballs
-      * Prepare data about juju models and setup expected calls to `_add_file_to_tar`
-        - Setup regular model called "basic"
-        - Setup empty model that'd trigger `JujuAPIError` because there are no
-          applications to export.
-        - Setup model with Cross Model Relation to make sure that we ignore CMR data in
-          bundle export.
-      * Once all is prepared, run `fetch_juju_data` function.
-      * Verify that expected calls were made.
+    This tests has two scenarios:
+      * Export of a regular model bundle
+      * Export of a bundle with Cross Model Relations. CMR data is expected to be skipped
     """
-    ts = collector.TIMESTAMP
-    site = collector_config.settings.site
-    customer = collector_config.settings.customer
-    output_dir = collector_config.settings.collection_path
+    expected_saved_bundle = '{"bundle": "bundle_data"}'
+    add_to_tar_mock = mocker.patch.object(collector, "_add_file_to_tar")
+    bundle_name = "juju_bundle.json"
+    tar_file = "/path/to.tar"
+    model_mock = MagicMock()
+    model_mock.export_bundle.side_effect = AsyncMock(return_value=exported_bundle)
 
-    add_file_to_tar_mock = mocker.patch.object(collector, "_add_file_to_tar")
-    tar_calls = []
-    controller = MagicMock()
-    controller.disconnect.side_effect = AsyncMock()
+    await collector._save_bundle_data(model_mock, bundle_name, tar_file)
 
-    # Prepare data for basic model
-    bundle_basic = '{"bundle": "basic"}'
-    status_basic = MagicMock()
-    status_basic.to_json.return_value = "{'status': 'basic'}"
-    model_basic = MagicMock()
-    model_basic.name = "Basic model"
-    model_basic.uuid = "Basic UUID"
-    model_basic.export_bundle.side_effect = AsyncMock(return_value=bundle_basic)
-    model_basic.get_status.side_effect = AsyncMock(return_value=status_basic)
-    model_basic.disconnect.side_effect = AsyncMock()
-    # expected data exports for basic model
-    basic_model_tar = f"{output_dir}/{customer}_@_{site}_@_{model_basic.name}_@_{ts}.tar"
-    tar_calls.append(
-        call(
-            f"juju_status_@_{model_basic.name}_@_{ts}",
-            status_basic.to_json.return_value,
-            basic_model_tar,
-        )
-    )
-    tar_calls.append(
-        call(
-            f"juju_bundle_@_{model_basic.name}_@_{ts}",
-            bundle_basic,
-            basic_model_tar,
-        )
-    )
+    model_mock.export_bundle.assert_called_once()
+    add_to_tar_mock.assert_called_once_with(bundle_name, expected_saved_bundle, tar_file)
 
-    # Prepare data for empty model
+
+@pytest.mark.asyncio
+async def test_save_bundle_data_empty_model(mocker):
+    """Test that _save_bundle_data function handles errors when exporting empty model."""
+    add_to_tar_mock = mocker.patch.object(collector, "_add_file_to_tar")
+    bundle_name = "empty_bundle.json"
+    tar_path = "/path/to.tar"
+    expected_bundle_data = "{}"
+
     juju_err = defaultdict(str)
     juju_err["error"] = "nothing to export as there are no applications"
     empty_model_err = collector.JujuAPIError(juju_err)
-    status_empty = MagicMock()
-    status_empty.to_json.return_value = "{'status': 'empty'}"
-    model_empty = MagicMock()
-    model_empty.name = "Empty model"
-    model_empty.uuid = "Empty uuid"
-    model_empty.export_bundle.side_effect = AsyncMock(side_effect=empty_model_err)
-    model_empty.get_status.side_effect = AsyncMock(return_value=status_empty)
-    model_empty.disconnect.side_effect = AsyncMock()
-    # expected data exports for empty model
-    empty_model_tar = f"{output_dir}/{customer}_@_{site}_@_{model_empty.name}_@_{ts}.tar"
-    tar_calls.append(
-        call(
-            f"juju_status_@_{model_empty.name}_@_{ts}",
-            status_empty.to_json.return_value,
-            empty_model_tar,
-        )
-    )
-    tar_calls.append(
-        call(
-            f"juju_bundle_@_{model_empty.name}_@_{ts}",
-            "{}",
-            empty_model_tar,
-        )
-    )
 
-    # Prepare data for model with CMR
-    status_cmr = MagicMock()
-    status_cmr.to_json.return_value = "{'status': 'cmr'}"
-    model_cmr = MagicMock()
-    model_cmr.name = "CMR model"
-    model_cmr.uuid = "CMR uuid"
-    model_cmr.export_bundle.side_effect = AsyncMock(
-        return_value="bundle: cmr\n---\noffers: cmr offers"
-    )
-    model_cmr.get_status.side_effect = AsyncMock(return_value=status_cmr)
-    model_cmr.disconnect.side_effect = AsyncMock()
-    # expected data exports for model with CMR
-    cmr_model_tar = f"{output_dir}/{customer}_@_{site}_@_{model_cmr.name}_@_{ts}.tar"
-    tar_calls.append(
-        call(
-            f"juju_status_@_{model_cmr.name}_@_{ts}",
-            status_cmr.to_json.return_value,
-            cmr_model_tar,
-        )
-    )
-    tar_calls.append(
-        call(
-            f"juju_bundle_@_{model_cmr.name}_@_{ts}",
-            '{"bundle": "cmr"}',
-            cmr_model_tar,
-        )
-    )
+    model_mock = MagicMock()
+    model_mock.export_bundle.side_effect = AsyncMock(side_effect=empty_model_err)
 
-    # mock controller methods
-    models = [model_basic, model_empty, model_cmr]
-    model_uuids = {model.name: model.uuid for model in models}
+    await collector._save_bundle_data(model_mock, bundle_name, tar_path)
 
+    model_mock.export_bundle.assert_called_once()
+    add_to_tar_mock.assert_called_once_with(bundle_name, expected_bundle_data, tar_path)
+
+
+@pytest.mark.asyncio
+async def test_save_bundle_data_err(mocker):
+    """Test that _save_bundle_data function re-raises general JujuErrors"""
+    add_to_tar_mock = mocker.patch.object(collector, "_add_file_to_tar")
+
+    juju_err = defaultdict(str)
+    juju_err["error"] = "Something bad happened"
+    empty_model_err = collector.JujuAPIError(juju_err)
+
+    model_mock = MagicMock()
+    model_mock.export_bundle.side_effect = AsyncMock(side_effect=empty_model_err)
+
+    with pytest.raises(collector.JujuAPIError):
+        await collector._save_bundle_data(model_mock, "bundle_name", "tar_path")
+
+    add_to_tar_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_save_status_data(mocker):
+    add_to_tar_mock = mocker.patch.object(collector, "_add_file_to_tar")
+    status_name = "model_status.json"
+    tar_path = "/path/to.tar"
+    status_data = "{'status': 'data'}"
+
+    status_mock = MagicMock()
+    status_mock.to_json.return_value = status_data
+
+    model_mock = MagicMock()
+    model_mock.get_status.side_effect = AsyncMock(return_value=status_mock)
+
+    await collector._save_status_data(model_mock, status_name, tar_path)
+
+    add_to_tar_mock.assert_called_once_with(status_name, status_data, tar_path)
+
+
+@pytest.mark.asyncio
+async def test_fetch_juju_data(collector_config, mocker):
+    """Test collection data from juju controller."""
+    ts = collector.TIMESTAMP
+    customer = collector_config.settings.customer
+    site = collector_config.settings.site
+    output_dir = collector_config.settings.collection_path
+    tar_path_template = os.path.join(
+        output_dir, f"{customer}_@_{site}_@_{{model}}_@_{ts}.tar"
+    )
+    model_uuids = {"model_1": "UUID 1", "model_2": "UUID 2"}
+    models = []
+    for _ in range(len(model_uuids.keys())):
+        model_mock = MagicMock()
+        model_mock.disconnect.side_effect = AsyncMock()
+        models.append(model_mock)
+
+    save_status_mock = mocker.patch.object(collector, "_save_status_data")
+    save_bundle_mock = mocker.patch.object(collector, "_save_bundle_data")
+
+    controller = MagicMock()
     controller.model_uuids.side_effect = AsyncMock(return_value=model_uuids)
     controller.get_model.side_effect = AsyncMock(side_effect=models)
+    controller.disconnect.side_effect = AsyncMock()
 
-    # collect data from juju
+    expected_status_calls = []
+    expected_bundle_calls = []
+
+    for model, model_name in zip(models, model_uuids.keys()):
+        bundle_name = f"juju_bundle_@_{model_name}_@_{ts}"
+        status_name = f"juju_status_@_{model_name}_@_{ts}"
+        tar_path = tar_path_template.format(model=model_name)
+
+        expected_status_calls.append(call(model, status_name, tar_path))
+        expected_bundle_calls.append(call(model, bundle_name, tar_path))
+
     await collector.fetch_juju_data(collector_config, controller)
 
-    # check expected calls
-    add_file_to_tar_mock.assert_has_calls(tar_calls)
-    controller.disconnect.assert_called_once()
+    save_status_mock.assert_has_calls(expected_status_calls)
+    save_bundle_mock.assert_has_calls(expected_bundle_calls)
+
     for model in models:
         model.disconnect.assert_called_once()
+
+    controller.disconnect.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -233,14 +237,18 @@ async def test_fetch_juju_data_error(collector_config, mocker):
     This function is meant to handle only JujuAPIErrors during bundle export of an empty
     model, other errors should be re-raised.
     """
+    mocker.patch.object(collector, "_add_file_to_tar")
     controller = MagicMock()
     controller.disconnect.side_effect = AsyncMock()
 
     juju_error = defaultdict(str)
     juju_error["error"] = "Something horrible juju error occurred."
 
+    status_mock = MagicMock()
+    status_mock.to_json.return_value = "{'model': 'status}'"
+
     model = MagicMock()
-    model.get_status.side_effect = AsyncMock(return_value="Model status")
+    model.get_status.side_effect = AsyncMock(return_value=status_mock)
     model.export_bundle.side_effect = AsyncMock(
         side_effect=collector.JujuAPIError(juju_error)
     )
