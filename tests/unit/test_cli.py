@@ -1,4 +1,4 @@
-"""Tests for software_inventory_collector.cli module"""
+"""Tests for software_inventory_collector.cli module."""
 from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import pytest
@@ -28,9 +28,7 @@ def test_parse_config_success(mocker):
     conf_file_content = {"option": "value"}
     conf_file_raw_content = yaml.dump(conf_file_content)
     expected_config = MagicMock()
-    from_dict_mock = mocker.patch.object(
-        cli.Config, "from_dict", return_value=expected_config
-    )
+    from_dict_mock = mocker.patch.object(cli.Config, "from_dict", return_value=expected_config)
 
     with patch("builtins.open", mock_open(read_data=conf_file_raw_content)) as mock_file:
         config = cli.parse_config(conf_file_path)
@@ -75,9 +73,7 @@ def test_cli_main_success(dry_run, mocker):
 
     parse_cli_mock = mocker.patch.object(cli, "parse_cli", return_value=cli_args)
     parse_config_mock = mocker.patch.object(cli, "parse_config", return_value=config)
-    get_controller_mock = mocker.patch.object(
-        cli, "get_controller", return_value=controller
-    )
+    get_controller_mock = mocker.patch.object(cli, "get_controller", return_value=controller)
     get_exporter_data_mock = mocker.patch.object(cli, "fetch_exporter_data")
     get_juju_data_mock = mocker.patch.object(cli, "fetch_juju_data")
 
@@ -106,9 +102,7 @@ def test_cli_main_config_error(mocker):
     cli_args.config = conf_path
 
     mocker.patch.object(cli, "parse_cli", return_value=cli_args)
-    parse_config_mock = mocker.patch.object(
-        cli, "parse_config", side_effect=cli.ConfigError
-    )
+    parse_config_mock = mocker.patch.object(cli, "parse_config", side_effect=cli.ConfigError)
     get_controller_mock = mocker.patch.object(cli, "get_controller")
     get_exporter_data_mock = mocker.patch.object(cli, "fetch_exporter_data")
     get_juju_data_mock = mocker.patch.object(cli, "fetch_juju_data")
@@ -132,9 +126,7 @@ def test_cli_main_juju_error(mocker):
 
     mocker.patch.object(cli, "parse_cli", return_value=cli_args)
     parse_config_mock = mocker.patch.object(cli, "parse_config", return_value=config)
-    get_controller_mock = mocker.patch.object(
-        cli, "get_controller", side_effect=cli.JujuError
-    )
+    get_controller_mock = mocker.patch.object(cli, "get_controller", side_effect=cli.JujuError)
     get_exporter_data_mock = mocker.patch.object(cli, "fetch_exporter_data")
     get_juju_data_mock = mocker.patch.object(cli, "fetch_juju_data")
 
@@ -163,12 +155,8 @@ def test_cli_main_collection_error(mocker):
 
     parse_cli_mock = mocker.patch.object(cli, "parse_cli", return_value=cli_args)
     parse_config_mock = mocker.patch.object(cli, "parse_config", return_value=config)
-    get_controller_mock = mocker.patch.object(
-        cli, "get_controller", return_value=controller
-    )
-    get_exporter_data_mock = mocker.patch.object(
-        cli, "fetch_exporter_data", side_effect=Exception
-    )
+    get_controller_mock = mocker.patch.object(cli, "get_controller", return_value=controller)
+    get_exporter_data_mock = mocker.patch.object(cli, "fetch_exporter_data", side_effect=Exception)
     get_juju_data_mock = mocker.patch.object(cli, "fetch_juju_data")
 
     with pytest.raises(SystemExit) as exc:

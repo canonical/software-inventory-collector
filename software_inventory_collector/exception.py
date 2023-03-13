@@ -6,7 +6,7 @@ class ConfigError(Exception):
 
 
 class ConfigMissingKeyError(ConfigError):
-    """Config file is missing a required key"""
+    """Config file is missing a required key."""
 
     def __init__(self, key_name: str) -> None:
         """Initiate exception instance."""

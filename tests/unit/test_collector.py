@@ -1,4 +1,4 @@
-"""Tests for software_inventory_collector.collector module"""
+"""Tests for software_inventory_collector.collector module."""
 import os.path
 from collections import defaultdict
 from tempfile import NamedTemporaryFile
@@ -24,9 +24,7 @@ def test_add_file_to_tar(mocker):
 
     mocker.patch.object(collector, "NamedTemporaryFile", return_value=temp_file)
 
-    with patch.object(
-        collector.tarfile, "open", return_value=tar_object_mock
-    ) as tar_file_mock:
+    with patch.object(collector.tarfile, "open", return_value=tar_object_mock) as tar_file_mock:
         collector._add_file_to_tar(file_name, file_content, tar_file_path)
 
     temp_file_write_mock.assert_called_once_with(file_content.encode("UTF-8"))
@@ -42,9 +40,7 @@ def test_fetch_exporter_data_success(collector_config, mocker):
     ts = collector.TIMESTAMP
     output_dir = collector_config.settings.collection_path
     for target in collector_config.targets:
-        tar_path = (
-            f"{output_dir}/{target.customer}_@_{target.site}_@_{target.model}_@_{ts}.tar"
-        )
+        tar_path = f"{output_dir}/{target.customer}_@_{target.site}_@_{target.model}_@_{ts}.tar"
         for endpoint in collector.ENDPOINTS:
             url = f"http://{target.endpoint}/{endpoint}"
             file_path = f"{endpoint}_@_{target.hostname}_@_{ts}"
@@ -54,9 +50,7 @@ def test_fetch_exporter_data_success(collector_config, mocker):
             expected_requests.append(call(url, timeout=60))
             expected_tar_calls.append(call(file_path, response.text, tar_path))
 
-    get_mock = mocker.patch.object(
-        collector.requests, "get", side_effect=expected_responses
-    )
+    get_mock = mocker.patch.object(collector.requests, "get", side_effect=expected_responses)
     add_tar_mock = mocker.patch.object(collector, "_add_file_to_tar")
 
     collector.fetch_exporter_data(collector_config)
@@ -149,7 +143,7 @@ async def test_save_bundle_data_empty_model(mocker):
 
 @pytest.mark.asyncio
 async def test_save_bundle_data_err(mocker):
-    """Test that _save_bundle_data function re-raises general JujuErrors"""
+    """Test that _save_bundle_data function re-raises general JujuErrors."""
     add_to_tar_mock = mocker.patch.object(collector, "_add_file_to_tar")
 
     juju_err = defaultdict(str)
@@ -190,9 +184,7 @@ async def test_fetch_juju_data(collector_config, mocker):
     customer = collector_config.settings.customer
     site = collector_config.settings.site
     output_dir = collector_config.settings.collection_path
-    tar_path_template = os.path.join(
-        output_dir, f"{customer}_@_{site}_@_{{model}}_@_{ts}.tar"
-    )
+    tar_path_template = os.path.join(output_dir, f"{customer}_@_{site}_@_{{model}}_@_{ts}.tar")
     model_uuids = {"model_1": "UUID 1", "model_2": "UUID 2"}
     models = []
     for _ in range(len(model_uuids.keys())):
@@ -249,14 +241,10 @@ async def test_fetch_juju_data_error(collector_config, mocker):
 
     model = MagicMock()
     model.get_status.side_effect = AsyncMock(return_value=status_mock)
-    model.export_bundle.side_effect = AsyncMock(
-        side_effect=collector.JujuAPIError(juju_error)
-    )
+    model.export_bundle.side_effect = AsyncMock(side_effect=collector.JujuAPIError(juju_error))
 
     controller.get_model.side_effect = AsyncMock(return_value=model)
-    controller.model_uuids.side_effect = AsyncMock(
-        return_value={"Broken model": "model UUID"}
-    )
+    controller.model_uuids.side_effect = AsyncMock(return_value={"Broken model": "model UUID"})
 
     with pytest.raises(collector.JujuAPIError) as exc:
         await collector.fetch_juju_data(collector_config, controller)

@@ -11,7 +11,7 @@ from software_inventory_collector.config import (
 
 @pytest.fixture()
 def collector_config_data() -> dict:
-    """Dictionary that can be used to initialize working Config object.
+    """Return a dictionary used to initialize working Config object.
 
     Use class method Config.from_dict() to create instance using this data.
     """
@@ -80,6 +80,4 @@ def collector_config() -> Config:
             site=site,
         ),
     ]
-    return Config(
-        settings=general_settings, juju_controller=juju_settings, targets=targets
-    )
+    return Config(settings=general_settings, juju_controller=juju_settings, targets=targets)

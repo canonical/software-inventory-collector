@@ -1,13 +1,15 @@
 name: software-inventory-collector
-base: core20
-version: '0.1'
+base: core22
+adopt-info: software-inventory-collector
 summary: Client for collecting data from charm-inventory-exporter
 description: |
   Collector designed to pull data exported by
   https://snapcraft.io/software-inventory-exporter
 
-grade: devel
+grade: stable
 confinement: strict
+environment:
+  PYTHONPATH: $SNAP/lib/python3.10/site-packages:$PYTHONPATH
 
 apps:
   software-inventory-collector:
@@ -19,5 +21,10 @@ parts:
   software-inventory-collector:
     plugin: python
     source: .
+    python-requirements: [./requirements.txt]
     python-packages:
       - .
+    override-build: |
+        snapcraftctl build
+        echo "Version: $(python3 setup.py --version)"
+        craftctl set version="$(python3 setup.py --version)"

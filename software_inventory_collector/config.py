@@ -13,7 +13,7 @@ class _BaseConfig:
 
     @classmethod
     def from_dict(cls, source: Dict) -> Self:
-        """Factory method that creates config object from raw config data.
+        """Create a config object from raw config data.
 
         This method finds values for each dataclass attributes specified in the class.
         It's designed to handle:

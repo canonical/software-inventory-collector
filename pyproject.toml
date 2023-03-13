@@ -1,41 +1,15 @@
-[tool.poetry]
-name = "software-inventory-collector"
-version = "0.1.0"
-description = "Client collecting data exported by https://github.com/dparv/inventory-exporter"
-authors = ["Diko Parvanov <diko.parvanov@canonical.com>"]
-license = "GPL-3.0-or-later"
-readme = "README.md"
-packages = [{include = "software_inventory_collector"}]
-
-[tool.poetry.dependencies]
-python = "^3.8.1"
-requests = "^2.28.2"
-PyYAML = "^6.0"
-juju = "2.9.38.1"
-
-[tool.poetry.scripts]
-software-inventory-collector = "software_inventory_collector.cli:main"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.coverage.report]
-show_missing = true
-fail_under = 100
-
-[tool.coverage.run]
-source = ["software_inventory_collector"]
+# This is a template `pyproject.toml` file for snaps
+# This file is managed by bootstack-charms-spec and should not be modified
+# within individual snap repos. https://launchpad.net/bootstack-charms-spec
 
 [tool.flake8]
-ignore = []
-exclude = ['.eggs', '.git', '.tox', '.venv', '.build', 'report']
-max-line-length = 90
+ignore = ["C901", "D100", "D101", "D102", "D103", "W503", "W504"]
+exclude = ['.eggs', '.git', '.tox', '.venv', '.build', 'build', 'report']
+max-line-length = 99
 max-complexity = 10
-per-file-ignores = "__init__.py:F401"
 
 [tool.black]
-line-length = 90
+line-length = 99
 exclude = '''
 /(
     | .eggs
@@ -43,33 +17,63 @@ exclude = '''
     | .tox
     | .venv
     | .build
+    | build
     | report
 )/
 '''
 
 [tool.isort]
 profile = "black"
-skip_glob = '''
-/(
-    | .eggs
-    | .git
-    | .tox
-    | .venv
-    | .build
-    | report
-)/
-'''
+skip_glob = [
+  ".eggs",
+  ".git",
+  ".tox",
+  ".venv",
+  ".build",
+  "build",
+  "report"
+]
+
+[tool.pylint]
+max-line-length = 99
+ignore-paths = [
+  ".eggs",
+  ".git",
+  ".tox",
+  ".venv",
+  ".build",
+  "report",
+  "tests",
+]
 
 [tool.mypy]
 warn_unused_ignores = true
 warn_unused_configs = true
 warn_unreachable = true
 disallow_untyped_defs = true
-exclude = ['.eggs', '.git', '.tox', '.venv', '.build', 'report', 'tests']
-
-## Ignore unsupported imports
-[[tool.mypy.overrides]]
-module = [
-  "juju.*",
-]
 ignore_missing_imports = true
+exclude = [
+  ".eggs",
+  ".git",
+  ".tox",
+  ".venv",
+  ".build",
+  "lib",
+  "report",
+  "tests",
+]
+
+[tool.coverage.run]
+relative_files = true
+source = ["."]
+omit = ["tests/**", "docs/**", "lib/**", "snap/**", "build/**", "setup.py"]
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+
+[tool.coverage.html]
+directory = "tests/unit/report/html"
+
+[tool.coverage.xml]
+output = "tests/unit/report/coverage.xml"
