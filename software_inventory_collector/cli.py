@@ -31,7 +31,7 @@ def parse_cli() -> argparse.Namespace:
         "--dry-run",
         action="store_true",
         default=False,
-        help="Verifies successful connection to the controller but no output " "is produced.",
+        help="Verifies successful connection to the controller but no output is produced.",
     )
     return arg_parser.parse_args()
 
