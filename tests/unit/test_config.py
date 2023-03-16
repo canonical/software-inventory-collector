@@ -1,4 +1,4 @@
-"""Tests for software_inventory_collector.config module"""
+"""Tests for software_inventory_collector.config module."""
 from dataclasses import dataclass
 from typing import List
 
@@ -33,7 +33,7 @@ def test_config_parsing_success(collector_config_data):
 
 
 def test_config_parsing_missing(collector_config_data):
-    """Test that exception is raised if required key is missing"""
+    """Test that exception is raised if required key is missing."""
     del collector_config_data["settings"]["site"]
 
     with pytest.raises(ConfigMissingKeyError):
@@ -41,7 +41,7 @@ def test_config_parsing_missing(collector_config_data):
 
 
 def test_config_parsing_basic_list():
-    """Test parsing config object that contains list of basic objects (int/str/..)
+    """Test parsing config object that contains list of basic objects (int/str/..).
 
     As this use-case does not exist in the default collector's config, this test will
     create its own config definition.

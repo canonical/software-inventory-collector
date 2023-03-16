@@ -33,14 +33,14 @@ juju_controller:  # Configuration related to Juju controller
   username: admin  # Username used to log into the Juju controller
   password: password  # Password used to log into the juju controller
 settings:  # General settings
-  collection_path: /path/to/output  # Path where collected data will be 
+  collection_path: /path/to/output  # Path where collected data will be
                                     # stored (must be writable directory
                                     # by the process)
   customer: Customer 1  # Arbitrary name for the customer that owns the cloud
   site: cloud 1  # Arbitrary name identifying site/deployment
 targets:  # List of Software Inventory Exporters
 - customer: Customer 1  # Arbitrary name identifying site/deployment
-  endpoint: 10.10.10.5:8675  # IP (or hostname) and port of an exporter 
+  endpoint: 10.10.10.5:8675  # IP (or hostname) and port of an exporter
   hostname: juju-e1efe1-pacakge-exporter-2  # hostname assigned to the exporter by juju
   model: package-exporter  # Name of the Juju model in which the exporter is deployed
   site: cloud 1  # Arbitrary name identifying site/deployment

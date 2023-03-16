@@ -94,7 +94,7 @@ async def _save_bundle_data(model: Model, file_name: str, dest_tarball: str) -> 
 
 
 async def _save_status_data(model: Model, file_name: str, dest_tarball: str) -> None:
-    """
+    """Save status data of a model.
 
     :param model: Connected Juju model object
     :param file_name: Filename of the exported bundle within tarball
