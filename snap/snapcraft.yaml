@@ -5,7 +5,9 @@ summary: Client for collecting data from charm-inventory-exporter
 description: |
   Collector designed to pull data exported by
   https://snapcraft.io/software-inventory-exporter
-
+architectures:
+  - build-on: amd64
+  - build-on: arm64
 grade: stable
 confinement: strict
 environment:
