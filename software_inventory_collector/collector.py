@@ -14,7 +14,7 @@ from juju.model import Model
 from software_inventory_collector.config import Config
 from software_inventory_collector.exception import CollectionError
 
-ENDPOINTS = ["dpkg", "snap", "kernel"]
+ENDPOINTS = ["dpkg", "snap", "kernel", "release"]
 
 TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
