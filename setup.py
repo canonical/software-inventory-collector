@@ -13,7 +13,7 @@ setup(
     use_scm_version={"local_scheme": "node-and-date"},
     description="Client for collecting data from charm-inventory-exporter",
     long_description=readme,
-    author="Canonical BootStack DevOps Centres",
+    author="Canonical BootStack",
     url="https://github.com/canonical/software-inventory-collector",
     license=project_license,
     packages=["software_inventory_collector"],
